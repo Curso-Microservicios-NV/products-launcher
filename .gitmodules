@@ -1,0 +1,3 @@
+[submodule "client-gateway"]
+	path = client-gateway
+	url = https://github.com/Curso-Microservicios-NV/client-gateway.git
