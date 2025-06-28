@@ -2,50 +2,63 @@ version: '3'
 
 services:
 
+  # ==========================
+  # NATS Server
+  # ==========================
   nats-server:
     image: nats:latest
     ports:
-      - "8222:8222"
+      - "${NATS_SERVER_PORT}:${NATS_SERVER_PORT}"
 
+  # ==========================
+  # Client Gateway
+  # ==========================
   client-gateway:
     build: ./client-gateway
     ports:
-      - ${CLIENT_GATEWAY_PORT}:3000
+      - ${CLIENT_GATEWAY_PORT}:${CLIENT_GATEWAY_PORT}
     volumes:
       - ./client-gateway/src:/usr/src/app/src
     command: npm run start:dev
     environment:
-      - PORT=3000
+      - PORT=${CLIENT_GATEWAY_PORT}
       - NATS_SERVERS=nats://nats-server:4222
-  
+
+  # ==========================
+  # Products MS
+  # ==========================
   product-ms:
-    build: ./products-ms
-    ports: 
-      - "3001:3001"
+    build: ./product-ms
+    ports:
+      - ${PRODUCT_MS_PORT}:${PRODUCT_MS_PORT}
     volumes:
-      - ./products-ms/src:/usr/src/app/src
+      - ./product-ms/src:/usr/src/app/src
     command: npm run start:dev
     environment:
-      - PORT=3001
+      - PORT=${PRODUCT_MS_PORT}
       - DATABASE_URL=file:./dev.db
       - NATS_SERVERS=nats://nats-server:4222
 
+  # ==========================
   # Orders MS
+  # ==========================
   orders-ms:
     depends_on:
       - orders-db
     build: ./orders-ms
-    ports: 
-      - "3002:3002"
+    ports:
+      - ${ORDERS_MS_PORT}:${ORDERS_MS_PORT}
     volumes:
       - ./orders-ms/src:/usr/src/app/src
     command: npm run start:dev
     environment:
-      - PORT=3002
-      - DATABASE_URL=postgresql://postgres:123456@orders-db:5432/ordersdb?schema=public
+      - PORT=${ORDERS_MS_PORT}
+      - DATABASE_URL=${ORDERS_MS_DATABASE_URL}
       - NATS_SERVERS=nats://nats-server:4222
 
+  # ==========================
   # Orders DB
+  # ==========================
   orders-db:
     container_name: orders_database
     image: postgres:16.2
@@ -53,8 +66,28 @@ services:
     volumes:
       - ./orders-ms/postgres:/var/lib/postgresql/data
     ports:
-      - 5432:5432
+      - ${ORDERS_DB_PORT}:${ORDERS_DB_PORT}
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=123456
-      - POSTGRES_DB=ordersdb
+      - POSTGRES_USER=${ORDERS_DB_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${ORDERS_DB_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${ORDERS_DB_POSTGRES_DB}
+
+  # ==========================
+  # Payments Microservice
+  # ==========================
+  payments-ms:
+    container_name: payments-ms
+    build: ./payments-ms
+    ports:
+      - ${PAYMENTS_MS_PORT}:${PAYMENTS_MS_PORT}
+    volumes:
+      - ./payments-ms/src:/usr/src/app/src
+    command: npm run start:dev
+    environment:
+      - PORT=${PAYMENTS_MS_PORT}
+      - NATS_SERVERS=nats://nats-server:4222
+      - STRIPE_SECRET=${PAYMENTS_MS_STRIPE_SECRET}
+      - STRIPE_SUCCESS_URL=${PAYMENTS_MS_STRIPE_SUCCESS_URL}
+      - STRIPE_CANCEL_URL=${PAYMENTS_MS_STRIPE_CANCEL_URL}
+      - STRIPE_ENDPOINT_SECRET=${PAYMENTS_MS_STRIPE_ENDPOINT_SECRET}
+      - NATS_SERVERS=nats://nats-server:4222
