@@ -49,3 +49,19 @@ hookdeck login
 hookdeck listen 3003 stripe-to-localhost
 ```
 
+## Build de producción
+
+1. Ejecutar para el build:
+```
+docker compose -f .\docker-compose.prod.yml build
+```
+
+2. Levantar y bajar la imagen (luego del build)
+```
+docker compose -f .\docker-compose.prod.yml up
+```
+
+```
+docker compose -f .\docker-compose.prod.yml down
+```
+
